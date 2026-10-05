@@ -90,6 +90,10 @@ Jangan mengarang identifier agar script tampak berhasil.
 
 **AUTHORIZED NOW: Fase 1 saja.**
 
+Status: **IMPLEMENTED — exit gate reached on 5 October 2026.** Lihat
+`RESEARCH_NOTES.md` untuk hasil PASS/BLOCKED dan `PRODUCT_READINESS.md` untuk
+implikasi desain. Fase 2–10 tetap terkunci.
+
 AI worker saat ini hanya diizinkan mengerjakan **Fase 1 — Fondasi dan Discovery
 Aman**. Fase 2 dan seterusnya adalah master backlog agar arah riset tidak hilang,
 tetapi belum boleh diimplementasikan atau diuji ke API sampai pemilik repository
