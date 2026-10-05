@@ -86,9 +86,30 @@ Jangan mengarang identifier agar script tampak berhasil.
   root repository.
 - Jangan menaruh contoh identifier sensitif dalam source code atau README.
 
-## Urutan Pekerjaan
+## Execution Gate Saat Ini
 
-### Fase 0 — Verifikasi dan Dokumentasi Dasar
+**AUTHORIZED NOW: Fase 1 saja.**
+
+AI worker saat ini hanya diizinkan mengerjakan **Fase 1 — Fondasi dan Discovery
+Aman**. Fase 2 dan seterusnya adalah master backlog agar arah riset tidak hilang,
+tetapi belum boleh diimplementasikan atau diuji ke API sampai pemilik repository
+memberikan persetujuan eksplisit.
+
+- Boleh membaca dokumentasi untuk memetakan fase mendatang.
+- Boleh mencatat tautan resmi dan pertanyaan terbuka.
+- Tidak boleh membuat script fase berikutnya "sekalian".
+- Tidak boleh memanggil endpoint fase berikutnya walaupun hanya GET.
+- Keberhasilan satu endpoint bukan izin mencoba endpoint lain.
+- Setelah acceptance criteria Fase 1 terpenuhi, berhenti dan laporkan hasil.
+
+## Master Roadmap Read-Only
+
+Nomor file setelah Fase 1 masih tentatif. Jangan mengganti histori atau nomor
+script yang telah selesai.
+
+### Fase 1 — Fondasi dan Discovery Aman (AUTHORIZED NOW)
+
+#### 1A — Verifikasi dan Dokumentasi Dasar
 
 1. Audit `01_generate_token.py` terhadap PDF lokal.
 2. Pastikan token tidak tercetak penuh secara default.
@@ -110,7 +131,7 @@ Jangan menggunakan blog pihak ketiga sebagai sumber kebenaran utama. Jika
 dokumentasi resmi berbeda dengan Postman, catat perbedaannya dan pilih perilaku
 yang paling aman; jangan mengubah request secara spekulatif.
 
-### Fase 1 — Discovery Aman
+#### 1B — Capability Discovery
 
 Buat, jika didukung dokumentasi resmi:
 
@@ -131,7 +152,7 @@ Tugas script:
 Jika endpoint metadata tidak didukung atau akses ditolak, dokumentasikan status
 HTTP dan `OperationOutcome` yang sudah diredaksi. Jangan mencoba endpoint acak.
 
-### Fase 2 — Organization dan Location
+#### 1C — Organization dan Location
 
 Buat:
 
@@ -153,7 +174,7 @@ Ketentuan:
 - Catat apakah Organization credential sama dengan Organization FHIR serta
   jangan menganggap keduanya identik tanpa verifikasi.
 
-### Fase 3 — Patient Read-Only
+#### 1D — Patient Read-Only
 
 Buat:
 
@@ -174,20 +195,48 @@ Ketentuan:
 - Bedakan secara eksplisit: bundle kosong, unauthorized, forbidden, invalid
   search parameter, dan resource tidak ditemukan.
 
-### Fase 4 — Practitioner Read-Only
+#### 1E — Practitioner dan PractitionerRole Read-Only
 
 Buat:
 
 ```text
 08_search_practitioner.py
 09_get_practitioner.py
+10_search_practitioner_roles.py
+11_get_practitioner_role.py
 ```
 
 Gunakan aturan keamanan yang sama dengan Patient. Jangan menganggap NIK dokter,
 nomor STR, dan IHS Practitioner ID dapat saling dipertukarkan. Verifikasi sistem
 identifier dan parameter search dari dokumentasi resmi.
 
-### Fase 5 — Analisis Readiness Produk
+`PractitionerRole` diteliti untuk memahami relasi tenaga kesehatan dengan
+Organization, specialty, role, Location, dan HealthcareService. Jika resource
+atau fixture tidak tersedia, beri status `BLOCKED`, bukan mencari data luas.
+
+#### 1F — Perilaku Operasional Aman
+
+Eksplorasi hanya melalui endpoint Fase 1 yang sudah terverifikasi:
+
+- pagination Bundle (`link.next`) dengan batas konservatif;
+- bundle kosong dan FHIR `OperationOutcome`;
+- perbedaan `401`, `403`, `404`, dan `429` bila terjadi secara natural;
+- request/correlation ID, content type, serta rate-limit metadata;
+- `_count`, `_summary`, `_sort`, `_include`, dan `_revinclude` hanya jika
+  terdokumentasi dan tersedia fixture resmi;
+- token expiry metadata tanpa loop request;
+- redaksi log dan error lokal.
+
+Script tentatif:
+
+```text
+12_inspect_fhir_behavior.py
+```
+
+Jangan sengaja memicu rate limit. Scanning, enumeration, security testing, dan
+load testing dilarang.
+
+#### 1G — Analisis Readiness Produk
 
 Perbarui `RESEARCH_NOTES.md` dan buat `PRODUCT_READINESS.md` yang membahas:
 
@@ -208,6 +257,168 @@ Perbarui `RESEARCH_NOTES.md` dan buat `PRODUCT_READINESS.md` yang membahas:
 Jangan membuat implementasi write, database production, atau arsitektur besar
 yang belum diperlukan. Dokumen harus membedakan **verified**, **assumption**,
 **unknown**, dan **future work**.
+
+#### Exit Gate Fase 1
+
+Fase 1 selesai ketika autentikasi dan dokumentasi tervalidasi; capability,
+Organization, Location, Patient, Practitioner, dan PractitionerRole sudah diuji
+aman atau memiliki blocker jelas; perilaku operasional dasar terdokumentasi;
+README, `RESEARCH_NOTES.md`, dan `PRODUCT_READINESS.md` diperbarui; serta tidak
+ada data sensitif atau dump mentah tersimpan. Setelah itu worker wajib berhenti.
+
+---
+
+### Fase 2 — Struktur Layanan dan Administrasi (BACKLOG — NOT AUTHORIZED)
+
+Resource kandidat:
+
+- `HealthcareService`, `Endpoint`;
+- `Schedule`, `Slot`, `Appointment`;
+- `EpisodeOfCare`, `CareTeam`, `RelatedPerson`, `Flag`;
+- `Consent`, `Coverage`.
+
+Riset hubungan Organization–Location–layanan–jadwal–tenaga medis, identifier
+system, scope per Organization, dan apakah resource benar-benar didukung. Jangan
+menyamakan Coverage SATUSEHAT dengan BPJS PCare/VClaim.
+
+```text
+NN_search_healthcare_services.py
+NN_get_healthcare_service.py
+NN_search_schedules.py
+NN_search_slots.py
+NN_search_appointments.py
+NN_search_episodes_of_care.py
+NN_search_care_teams.py
+NN_get_related_person.py
+NN_search_consents.py
+NN_search_coverages.py
+```
+
+### Fase 3 — Kunjungan dan Rekam Klinis Inti (BACKLOG — NOT AUTHORIZED)
+
+Resource kandidat: `Encounter`, `Condition`, `AllergyIntolerance`, `Procedure`,
+`ClinicalImpression`, dan `Observation`.
+
+Riset lifecycle rawat jalan/IGD/rawat inap; relasi Patient, PractitionerRole,
+Organization, dan Location; diagnosis utama/sekunder; coding; alergi; tindakan;
+tanda vital; UCUM; profile/extension wajib; dan search parameters. Wajib memakai
+dataset sandbox resmi dan tidak menampilkan narasi klinis/identitas pasien.
+
+```text
+NN_search_encounters.py
+NN_get_encounter.py
+NN_search_conditions.py
+NN_get_condition.py
+NN_search_allergies.py
+NN_search_procedures.py
+NN_search_clinical_impressions.py
+NN_search_observations.py
+NN_get_observation.py
+```
+
+### Fase 4 — Laboratorium, Radiologi, dan Dokumen (BACKLOG — NOT AUTHORIZED)
+
+Resource kandidat: `ServiceRequest`, `Specimen`, `Observation`,
+`DiagnosticReport`, `ImagingStudy`, `DocumentReference`, dan `BodyStructure` bila
+digunakan profile resmi.
+
+Riset alur order → specimen → result → report, panel laboratorium, LOINC,
+SNOMED CT, UCUM, performer, status, metadata radiologi, dan attachment metadata.
+Jangan mengunduh attachment, DICOM, image, atau `Binary`; metadata saja sampai
+risiko serta otorisasi dipahami.
+
+```text
+NN_search_service_requests.py
+NN_search_specimens.py
+NN_search_lab_observations.py
+NN_search_diagnostic_reports.py
+NN_search_imaging_studies.py
+NN_search_document_references.py
+```
+
+### Fase 5 — Farmasi (BACKLOG — NOT AUTHORIZED)
+
+Resource kandidat: `Medication`, `MedicationRequest`, `MedicationDispense`,
+`MedicationAdministration`, `MedicationStatement`, dan katalog KFA resmi.
+
+Riset lifecycle resep/dispensing/administration; KFA; bentuk dan satuan sediaan;
+dose, route, frequency, duration, quantity; racikan; aturan pakai; serta relasi
+Encounter, prescriber, dispenser, Patient, dan Organization.
+
+```text
+NN_search_medications.py
+NN_search_medication_requests.py
+NN_get_medication_request.py
+NN_search_medication_dispenses.py
+NN_search_medication_administrations.py
+NN_search_medication_statements.py
+NN_lookup_kfa_product.py
+```
+
+### Fase 6 — Terminologi dan Conformance (BACKLOG — NOT AUTHORIZED)
+
+Riset `StructureDefinition`, `SearchParameter`, `ValueSet`, `CodeSystem`,
+`ConceptMap`, ICD-10, SNOMED CT, LOINC, UCUM, KFA, serta kode administratif dan
+specialty resmi.
+
+Operasi `$lookup`, `$expand`, dan `$validate-code` harus mengikuti method resmi.
+Walaupun semantiknya read-only, HTTP POST tetap dilarang tanpa izin eksplisit.
+Prioritaskan artefak Implementation Guide dan endpoint GET resmi. Jangan
+mengunduh seluruh terminologi; petakan kebutuhan validasi dan lisensinya.
+
+```text
+NN_inspect_structure_definitions.py
+NN_inspect_search_parameters.py
+NN_lookup_code_system.py
+NN_expand_value_set.py
+NN_validate_code_get.py
+TERMINOLOGY_NOTES.md
+```
+
+### Fase 7 — Financial dan Ekosistem Eksternal (BACKLOG — NOT AUTHORIZED)
+
+Verifikasi dokumentasi untuk `Account`, `Claim`, `ClaimResponse`, `Invoice`, dan
+`Coverage`; jangan berasumsi tersedia. SATUSEHAT tidak boleh disamakan dengan
+BPJS PCare, VClaim, Aplicares, Antrean, atau Mobile JKN. Output fase ini terutama
+gap analysis dan peta integrasi terpisah, bukan percobaan endpoint.
+
+### Fase 8 — SSRME, CHLink, dan SHLink (BACKLOG — NOT READ-ONLY)
+
+PDF lokal mendokumentasikan `POST /ssrme/v2/ntl/chl` dan
+`POST /ssrme/v2/ntl/shl`. Keduanya di luar izin read-only. Saat ini hanya boleh
+meneliti prasyarat, payload, consent normal/bypass, expiry, security, dan error
+response tanpa memanggil endpoint.
+
+Sebelum fase dibuka, validasi integrasi dan pengiriman kunjungan fasyankes,
+KYC/consent, ID Patient/Practitioner/Organization, kontrol akses UI/session,
+audit, dan perlindungan URL/token sensitif.
+
+### Fase 9 — Write Flow End-to-End (FUTURE — NOT AUTHORIZED)
+
+```text
+Encounter
+  → Condition
+  → Observation
+  → Procedure
+  → ServiceRequest / DiagnosticReport
+  → MedicationRequest / MedicationDispense
+  → finalisasi Encounter
+```
+
+Memerlukan roadmap terpisah untuk tenant sandbox sah, fixture klinis dummy,
+profile validation, dependency ordering, mapping ID, idempotency, outbox, retry,
+dead letter, reconciliation, provenance/audit, correction/cancel/error workflow,
+privacy, consent, retention, RBAC, dan incident response.
+
+### Fase 10 — Production Readiness dan Multi-Tenant (FUTURE)
+
+Audit onboarding/offboarding fasyankes, credential dan token cache per tenant,
+secret manager/rotation, isolasi sandbox-production, queue isolation,
+rate-limit/backpressure, observability tanpa PHI/PII, immutable audit trail,
+backup/DR/reconciliation, retention, RBAC/ABAC, least privilege, break-glass,
+legal/compliance, dan regression test perubahan Implementation Guide.
+
+Jangan membuat klaim "SATUSEHAT ready/certified" tanpa verifikasi resmi.
 
 ## Acceptance Criteria per Script
 
@@ -256,11 +467,12 @@ Laporkan secara ringkas:
 
 ## Definition of Done Roadmap Read-Only
 
-Fase read-only selesai ketika autentikasi, discovery (jika didukung),
-Organization, Location, Patient, dan Practitioner telah memiliki script aman dan
-dokumentasi terverifikasi; atau status blocker masing-masing telah dijelaskan
-tanpa menggunakan data nyata maupun melakukan operasi tulis.
+Fase 1 read-only selesai ketika autentikasi, discovery (jika didukung),
+Organization, Location, Patient, Practitioner, PractitionerRole, serta perilaku
+operasional dasar telah memiliki script/dokumentasi aman; atau status blocker
+masing-masing telah dijelaskan tanpa data nyata maupun operasi tulis.
 
-Setelah itu **berhenti**. Jangan melanjutkan ke Encounter, Condition,
-Observation, Medication, CHLink, SHLink, atau resource write lain sampai pemilik
-repository secara eksplisit menyetujui roadmap fase berikutnya.
+Setelah itu **berhenti**. Semua Fase 2–10 tetap terkunci sampai pemilik repository
+secara eksplisit membuka fase tertentu. Jangan melanjutkan ke Encounter,
+Condition, Observation, Medication, CHLink, SHLink, atau resource lain hanya
+karena tercantum dalam master backlog.
